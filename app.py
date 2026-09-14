@@ -14,7 +14,7 @@ THUMB_DIR = os.path.join(UPLOAD_DIR, "thumbs")
 DATA_DIR = os.path.join(APP_DIR, "data")
 DATA_FILE = os.path.join(DATA_DIR, "research.json")
 
-ACCESS_CODE = "090308"
+ACCESS_CODE = "000001"
 ALLOWED_DOCS = {".pdf", ".docx"}
 ALLOWED_IMAGES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
