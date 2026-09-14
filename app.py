@@ -8,10 +8,11 @@ from flask import Flask, abort, jsonify, render_template, request, send_from_dir
 from werkzeug.utils import secure_filename
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(APP_DIR, "uploads")
+BASE_DIR = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", APP_DIR)
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 FILE_DIR = os.path.join(UPLOAD_DIR, "files")
 THUMB_DIR = os.path.join(UPLOAD_DIR, "thumbs")
-DATA_DIR = os.path.join(APP_DIR, "data")
+DATA_DIR = os.path.join(BASE_DIR, "data")
 DATA_FILE = os.path.join(DATA_DIR, "research.json")
 
 ACCESS_CODE = "000001"
