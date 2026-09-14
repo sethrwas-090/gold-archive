@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Binary Prediction on Tokenized Gold</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #070705;
+      --bg-2: #11110d;
+      --gold: #d4b15f;
+      --gold-2: #f0d48a;
+      --line: rgba(212, 177, 95, 0.22);
+      --text: #f4efe2;
+      --muted: #9a927f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Outfit, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    button, input { font: inherit; }
+    .hidden { display: none !important; }
+
+    .landing, .app { min-height: 100vh; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 22px 28px; border-bottom: 1px solid var(--line);
+    }
+    .brand { letter-spacing: .28em; font-size: 11px; color: var(--gold); text-transform: uppercase; }
+    .dev-link {
+      background: transparent; color: var(--gold-2); border: 1px solid var(--line);
+      padding: 8px 14px; letter-spacing: .16em; font-size: 11px; cursor: pointer;
+    }
+    .hero {
+      min-height: calc(100vh - 70px);
+      display: grid; place-items: center; text-align: center; padding: 40px 20px;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(212,177,95,.12), transparent 42%),
+        linear-gradient(#070705, #0c0c08);
+    }
+    .hero h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(42px, 8vw, 92px);
+      line-height: .92; font-weight: 600; max-width: 900px;
+    }
+    .hero p { margin: 22px auto 36px; color: var(--muted); max-width: 520px; }
+    .gold-btn {
+      background: linear-gradient(180deg, #e7c77a, #b8903a);
+      color: #1a1406; border: 0; padding: 14px 28px; cursor: pointer;
+      letter-spacing: .18em; font-weight: 600; font-size: 12px;
+    }
+
+    .gate, .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.72);
+      display: grid; place-items: center; z-index: 20; padding: 20px;
+    }
+    .panel {
+      width: min(440px, 100%); background: var(--bg-2);
+      border: 1px solid var(--line); padding: 28px;
+    }
+    .panel.wide { width: min(560px, 100%); }
+    .panel h2 { font-family: "Cormorant Garamond", serif; font-size: 32px; margin-bottom: 8px; }
+    .panel p, label { color: var(--muted); font-size: 13px; }
+    .code-input, .field {
+      width: 100%; margin: 16px 0 18px; padding: 14px 12px;
+      background: #0a0a08; border: 1px solid var(--line); color: var(--text);
+    }
+    .error { color: #e8a0a0; min-height: 18px; font-size: 13px; margin-bottom: 10px; }
+
+    .app-header {
+      display: grid; grid-template-columns: 1fr auto auto;
+      gap: 12px; align-items: center; padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .app-header h1 {
+      font-family: "Cormorant Garamond", serif; font-size: clamp(22px, 4vw, 34px);
+    }
+    .search {
+      min-width: min(280px, 42vw); padding: 11px 12px;
+      background: #0a0a08; border: 1px solid var(--line); color: var(--text);
+    }
+    .plus {
+      width: 44px; height: 44px; border: 1px solid var(--gold);
+      background: transparent; color: var(--gold-2); font-size: 28px; cursor: pointer;
+    }
+    .grid {
+      display: grid; gap: 18px; padding: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+    .card {
+      background: #10100c; border: 1px solid var(--line); cursor: pointer;
+      overflow: hidden; transition: transform .15s ease, border-color .15s ease;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--gold); }
+    .thumb { aspect-ratio: 16/10; background: #1a1a14; overflow: hidden; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card-body { padding: 14px; }
+    .card-body h3 { font-size: 16px; margin-bottom: 6px; }
+    .meta { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; }
+    .empty { padding: 80px 24px; text-align: center; color: var(--muted); }
+
+    .viewer-thumb { width: 100%; max-height: 240px; object-fit: cover; margin: 12px 0 16px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .ghost {
+      background: transparent; color: var(--gold-2); border: 1px solid var(--line);
+      padding: 10px 14px; cursor: pointer;
+    }
+    .danger { color: #e8a0a0; border-color: rgba(232,160,160,.35); }
+    .file-box {
+      border: 1px dashed var(--line); padding: 16px; margin: 10px 0 16px; color: var(--muted);
+    }
+    @media (max-width: 720px) {
+      .app-header { grid-template-columns: 1fr auto; }
+      .app-header h1 { grid-column: 1 / -1; }
+      .search { min-width: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <section id="landing" class="landing">
+    <div class="topbar">
+      <div class="brand">Research Archive</div>
+      <button class="dev-link" id="devHeader">DEV MODE</button>
+    </div>
+    <div class="hero">
+      <div>
+        <div class="brand" style="margin-bottom:18px">Private Lab Notes</div>
+        <h1>Binary Prediction on Tokenized Gold</h1>
+        <p>Deposit papers, notes, and working drafts. Search them later. Open any file in one tap.</p>
+        <button class="gold-btn" id="devHero">DEV MODE</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="app" class="app hidden">
+    <div class="app-header">
+      <h1>Binary Prediction on Tokenized Gold</h1>
+      <input class="search" id="search" placeholder="Search by keyword or title" />
+      <button class="plus" id="addBtn" title="Add research">+</button>
+    </div>
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty hidden">No research uploaded yet. Tap + to add the first paper.</div>
+  </section>
+
+  <div id="gate" class="gate hidden">
+    <div class="panel">
+      <h2>Dev access</h2>
+      <p>Enter the archive code to continue.</p>
+      <input class="code-input" id="codeInput" inputmode="numeric" maxlength="12" placeholder="Access code" />
+      <div class="error" id="gateError"></div>
+      <button class="gold-btn" id="enterBtn">ENTER ARCHIVE</button>
+    </div>
+  </div>
+
+  <div id="addModal" class="modal hidden">
+    <div class="panel wide">
+      <h2>Add research</h2>
+      <label>Title</label>
+      <input class="field" id="titleInput" placeholder="Working title" />
+      <label>Keywords</label>
+      <input class="field" id="keywordsInput" placeholder="binary, XAUT, features, walk-forward" />
+      <label>Document (PDF or DOCX)</label>
+      <div class="file-box"><input type="file" id="fileInput" accept=".pdf,.docx,application/pdf" /></div>
+      <label>Thumbnail image</label>
+      <div class="file-box"><input type="file" id="thumbInput" accept="image/*" /></div>
+      <div class="error" id="addError"></div>
+      <div class="row">
+        <button class="gold-btn" id="uploadBtn">UPLOAD</button>
+        <button class="ghost" id="cancelAdd">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewModal" class="modal hidden">
+    <div class="panel wide">
+      <h2 id="viewTitle"></h2>
+      <p id="viewMeta"></p>
+      <img id="viewThumb" class="viewer-thumb" alt="Research thumbnail" />
+      <div class="row">
+        <a class="gold-btn" id="openFile" target="_blank" rel="noopener">OPEN FILE</a>
+        <a class="ghost" id="downloadFile" download>Download</a>
+        <button class="ghost danger" id="deleteBtn">Delete</button>
+        <button class="ghost" id="closeView">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const landing = document.getElementById("landing");
+    const app = document.getElementById("app");
+    const gate = document.getElementById("gate");
+    const grid = document.getElementById("grid");
+    const empty = document.getElementById("empty");
+    let currentItem = null;
+
+    const openGate = () => gate.classList.remove("hidden");
+    document.getElementById("devHeader").onclick = openGate;
+    document.getElementById("devHero").onclick = openGate;
+
+    async function enterArchive() {
+      const code = document.getElementById("codeInput").value.trim();
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        document.getElementById("gateError").textContent = data.error || "Denied";
+        return;
+      }
+      sessionStorage.setItem("gold-archive", "1");
+      gate.classList.add("hidden");
+      landing.classList.add("hidden");
+      app.classList.remove("hidden");
+      loadItems();
+    }
+    document.getElementById("enterBtn").onclick = enterArchive;
+    document.getElementById("codeInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") enterArchive();
+    });
+
+    if (sessionStorage.getItem("gold-archive") === "1") {
+      landing.classList.add("hidden");
+      app.classList.remove("hidden");
+    }
+
+    async function loadItems() {
+      const q = document.getElementById("search").value.trim();
+      const res = await fetch("/api/research?q=" + encodeURIComponent(q));
+      const items = await res.json();
+      grid.innerHTML = "";
+      empty.classList.toggle("hidden", items.length > 0);
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="thumb"><img src="${item.thumb_url}" alt="${item.title}" /></div>
+          <div class="card-body">
+            <h3>${item.title}</h3>
+            <div class="meta"><span>${item.file_type}</span><span>${new Date(item.created_at).toLocaleDateString()}</span></div>
+          </div>`;
+        card.onclick = () => openItem(item);
+        grid.appendChild(card);
+      });
+    }
+    document.getElementById("search").addEventListener("input", loadItems);
+    if (sessionStorage.getItem("gold-archive") === "1") loadItems();
+
+    document.getElementById("addBtn").onclick = () => {
+      document.getElementById("addError").textContent = "";
+      document.getElementById("addModal").classList.remove("hidden");
+    };
+    document.getElementById("cancelAdd").onclick = () => {
+      document.getElementById("addModal").classList.add("hidden");
+    };
+
+    document.getElementById("uploadBtn").onclick = async () => {
+      const title = document.getElementById("titleInput").value.trim();
+      const keywords = document.getElementById("keywordsInput").value.trim();
+      const file = document.getElementById("fileInput").files[0];
+      const thumb = document.getElementById("thumbInput").files[0];
+      const err = document.getElementById("addError");
+      if (!title || !file || !thumb) {
+        err.textContent = "Title, document, and thumbnail are required.";
+        return;
+      }
+      const fd = new FormData();
+      fd.append("title", title);
+      fd.append("keywords", keywords);
+      fd.append("file", file);
+      fd.append("thumbnail", thumb);
+      const res = await fetch("/api/research", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        err.textContent = data.error || "Upload failed";
+        return;
+      }
+      document.getElementById("titleInput").value = "";
+      document.getElementById("keywordsInput").value = "";
+      document.getElementById("fileInput").value = "";
+      document.getElementById("thumbInput").value = "";
+      document.getElementById("addModal").classList.add("hidden");
+      loadItems();
+    };
+
+    function openItem(item) {
+      currentItem = item;
+      document.getElementById("viewTitle").textContent = item.title;
+      document.getElementById("viewMeta").textContent =
+        `${item.file_type} · ${item.file_name} · ${item.keywords || "no keywords"}`;
+      document.getElementById("viewThumb").src = item.thumb_url;
+      document.getElementById("openFile").href = item.file_url;
+      document.getElementById("downloadFile").href = item.file_url;
+      document.getElementById("downloadFile").download = item.file_name;
+      document.getElementById("viewModal").classList.remove("hidden");
+    }
+    document.getElementById("closeView").onclick = () => {
+      document.getElementById("viewModal").classList.add("hidden");
+    };
+    document.getElementById("deleteBtn").onclick = async () => {
+      if (!currentItem || !confirm("Delete this research item?")) return;
+      await fetch("/api/research/" + currentItem.id, { method: "DELETE" });
+      document.getElementById("viewModal").classList.add("hidden");
+      loadItems();
+    };
+  </script>
+</body>
+</html>
